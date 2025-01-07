@@ -197,7 +197,7 @@ EOL
    sysctl -p > /dev/null
 fi
 
-ip4address=$(hostname -i)
+ip4address=45.63.58.208
 echo "Creating a file with data for connection - $ip4address.list"
 proxyport1=$(($proxy_port - 1 ))
 touch -f /root/$ip4address.list
