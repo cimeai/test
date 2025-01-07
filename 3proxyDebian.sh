@@ -108,9 +108,9 @@ startrotation
 echo "Setting up a proxy for $base_net with mask $mask"
 sleep 2
 echo "Configuring a basic IPv6 address"
-ip -6 addr add ${base_net}2 peer ${base_net}1 dev eth0
+ip -6 addr add ${base_net}2 peer ${base_net}1 dev enp1s0
 sleep 5
-ip -6 route add default via ${base_net}1 dev eth0
+ip -6 route add default via ${base_net}1 dev enp1s0
 ip -6 route add local ${base_net}/${mask} dev lo
 
 #СЃРєР°С‡РёРІР°РЅРёРµ Р°СЂС…РёРІР° 3proxy
@@ -166,7 +166,7 @@ fi
 rm -f /etc/ndppd.conf
 cat > /etc/ndppd.conf << EOL
 route-ttl 30000
-proxy eth0 {
+proxy enp1s0 {
    router no
    timeout 500
    ttl 30000
@@ -183,7 +183,7 @@ then
 else
    echo "Configuring sysctl"
    cat > /etc/sysctl.conf << EOL
-   net.ipv6.conf.eth0.proxy_ndp=1
+   net.ipv6.conf.enp1s0.proxy_ndp=1
    net.ipv6.conf.all.proxy_ndp=1
    net.ipv6.conf.default.forwarding=1
    net.ipv6.conf.all.forwarding=1
@@ -197,7 +197,7 @@ EOL
    sysctl -p > /dev/null
 fi
 
-ip4address=103.238.234.30
+ip4address=$(hostname -i)
 echo "Creating a file with data for connection - $ip4address.list"
 proxyport1=$(($proxy_port - 1 ))
 touch -f /root/$ip4address.list
@@ -220,7 +220,7 @@ echo "ip -6 route add local ${base_net}/${mask} dev lo" >> /etc/rc.local
 if grep -q "address ${base_net}2" /etc/network/interfaces;
 then echo "The network is already set up."
 else
-echo "iface eth0 inet6 static" >> /etc/network/interfaces
+echo "iface enp1s0 inet6 static" >> /etc/network/interfaces
 echo "        address ${base_net}2" >> /etc/network/interfaces
 echo "        netmask ${mask}" >> /etc/network/interfaces
 echo "        gateway ${base_net}1" >> /etc/network/interfaces
@@ -235,7 +235,7 @@ echo "ip -6 route add local ${base_net}/${mask} dev lo" >> /etc/rc.local
 if grep -q "address ${base_net}2" /etc/network/interfaces ;
 then echo "The network is already set up."
 else
-echo "iface eth0 inet6 static" >> /etc/network/interfaces
+echo "iface enp1s0 inet6 static" >> /etc/network/interfaces
 echo "        address ${base_net}2" >> /etc/network/interfaces
 echo "        netmask ${mask}" >> /etc/network/interfaces
 echo "        gateway ${base_net}1" >> /etc/network/interfaces
@@ -250,7 +250,7 @@ echo "ip -6 route add local ${base_net}/${mask} dev lo" >> /etc/rc.local
 if grep -q "address ${base_net1}2" /etc/network/interfaces;
 then echo "The network is already set up."
 else
-echo "iface eth0 inet6 static" >> /etc/network/interfaces
+echo "iface enp1s0 inet6 static" >> /etc/network/interfaces
 echo "        address ${base_net1}2" >> /etc/network/interfaces
 echo "        netmask 64" >> /etc/network/interfaces
 echo "        gateway ${base_net1}1" >> /etc/network/interfaces
@@ -265,7 +265,7 @@ echo "ip -6 route add local ${base_net}/${mask} dev lo" >> /etc/rc.local
 if grep -q "address ${base_net1}2" /etc/network/interfaces;
 then echo "The network is already set up."
 else
-echo "iface eth0 inet6 static" >> /etc/network/interfaces
+echo "iface enp1s0 inet6 static" >> /etc/network/interfaces
 echo "        address ${base_net1}2" >> /etc/network/interfaces
 echo "        netmask 64" >> /etc/network/interfaces
 echo "        gateway ${base_net1}1" >> /etc/network/interfaces
@@ -327,7 +327,7 @@ echo auth strong
 echo users $proxy_login:CL:$proxy_pass
 echo allow $proxy_login
 
-ip4_addr=\$(ip -4 addr sh dev eth0|grep inet |awk '{print \$2}')
+ip4_addr=\$(ip -4 addr sh dev enp1s0|grep inet |awk '{print \$2}')
 port=$proxy_port
 count=1
 for i in \$(cat /home/3proxy/ip.list); do
