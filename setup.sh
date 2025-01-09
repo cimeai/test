@@ -1,15 +1,15 @@
 #!/bin/bash
-#Greetings
+#Приветствие
 echo -en "\033[37;1;41m !!!ATTENTION!!! \033[0m \n"
 echo -en "\033[37;1;41m As a result of the script execution, a public VPSVILLE technical support key will be added to your server.  \033[0m \n"
 echo -en "\033[37;1;41m If you do not want technical support to have access to your server, remove our key from /root/.ssh/authorised_keys   \033[0m \n\n\n"
 echo -en "\033[35;40;1m Script for automatic IPv6 proxy configuration. \033[0m \n\n\n"
-echo -e "\n\033[35m               в–„\033[0m"
-echo -e "\033[35mв–€ в–€ в–€в–Ђв–€ в–€в–Ђ в–€ в–€ в–„ в–€ в–€ в–€в–Ђв–Ђ\033[0m"
-echo -e "\033[35mв–Ђв–„в–Ђ в–€в–Ђв–Ђ в–„в–€ в–Ђв–„в–Ђ в–€ в–€ в–€ в–€в–€в–„\033[0m"
+echo -e "\n\033[35m               ▄\033[0m"
+echo -e "\033[35m█ █ █▀█ █▀ █ █ ▄ █ █ █▀▀\033[0m"
+echo -e "\033[35m▀▄▀ █▀▀ ▄█ ▀▄▀ █ █ █ ██▄\033[0m"
 echo -e "\033[35m -----------------------\033[0m\n"
 read -p "Press [Enter] to continue...."
-#Р’РІРѕРґ Рё РїСЂРѕРІРµСЂРєР° СЃРµС‚Рё
+#Ввод и проверка сети
 echo "Enter the issued network and press [ENTER]:"
 read network
 
@@ -36,7 +36,7 @@ else
     exit 1
 fi
 
-#Proxy data
+#Данные для прокси
 echo "Enter the number of addresses to randomly generate"
 read MAXCOUNT
 THREADS_MAX=`sysctl kernel.threads-max|awk '{print $3}'`
@@ -52,13 +52,13 @@ read proxy_pass
 echo "Enter the starting port for the proxy."
 read proxy_port
 
-#Network calculation
+#Просчет сети
 base_net=`echo $network | awk -F/ '{print $1}'`
 base_net1=`echo $network_mask | awk -F/ '{print $1}'`
 
 prxtp () {
 
-#Choosing a proxy type
+#Выбор типа прокси
 echo "What type of proxy do you want to use?"
 echo "http {recommended} or socks"
 read proxytype
@@ -76,7 +76,7 @@ if [[ $proxytype == "http" ]];
         else proxytype=socks
 fi
 
-#Rotation
+#Ротация
 startrotation () {
 echo "Use a rotation? [Y/N]"
 read rotation
@@ -92,7 +92,7 @@ else
         fi
 fi   }
 
-#Rotation time
+#Время ротации
 timerrotation () {
         echo "Enter the rotation frequency in minutes {1-59}"
                 read timer
@@ -104,16 +104,16 @@ timerrotation () {
 
 startrotation
 
-#network setup
+#настройка сети
 echo "Setting up a proxy for $base_net with mask $mask"
 sleep 2
 echo "Configuring a basic IPv6 address"
-ip -6 addr add ${base_net}2 peer ${base_net}1 dev $main_interface
+ip -6 addr add ${base_net}2 peer ${base_net}1 dev eth0
 sleep 5
-ip -6 route add default via ${base_net}1 dev $main_interface
+ip -6 route add default via ${base_net}1 dev eth0
 ip -6 route add local ${base_net}/${mask} dev lo
 
-#downloading archive 3proxy
+#скачивание архива 3proxy
 if [ -f /home/3proxy/3proxy ] 
     then
    echo "The 3proxy.tar archive has already been downloaded, let's continue with the configuration..."
@@ -140,7 +140,7 @@ cat >/etc/systemd/system.conf.d/10-filelimit.conf <<EOF
 DefaultLimitNOFILE=500000
 EOF
 
-#download ndppd
+#скачивание  ndppd
 if [ -f /usr/sbin/ndppd ]; then
    echo "The ndppd service is installed now"
 else
@@ -150,7 +150,7 @@ else
    apt -y install psmisc 2>&1 > /dev/null | grep -v "WARNING: apt does not have a stable CLI interface. Use with caution in scripts"
 fi
 
-#Checking previous installations.
+#Проверка предыдущих инсталляций.
 if [ -f /home/3proxy/3proxy.cfg ];
         then echo "3proxy.cfg config detected. Delete."
         cat /dev/null > /home/3proxy/3proxy.cfg
@@ -162,11 +162,11 @@ if [ -f /home/3proxy/3proxy.cfg ];
         else echo "The 3proxy.cfg configuration is missing. Initial configuration."
 fi
 
-#ndppd configuration
+#конфигурация ndppd
 rm -f /etc/ndppd.conf
 cat > /etc/ndppd.conf << EOL
 route-ttl 30000
-proxy $main_interface {
+proxy eth0 {
    router no
    timeout 500
    ttl 30000
@@ -183,7 +183,7 @@ then
 else
    echo "Configuring sysctl"
    cat > /etc/sysctl.conf << EOL
-   net.ipv6.conf.$main_interface.proxy_ndp=1
+   net.ipv6.conf.eth0.proxy_ndp=1
    net.ipv6.conf.all.proxy_ndp=1
    net.ipv6.conf.default.forwarding=1
    net.ipv6.conf.all.forwarding=1
@@ -220,7 +220,7 @@ echo "ip -6 route add local ${base_net}/${mask} dev lo" >> /etc/rc.local
 if grep -q "address ${base_net}2" /etc/network/interfaces;
 then echo "The network is already set up."
 else
-echo "iface $main_interface inet6 static" >> /etc/network/interfaces
+echo "iface eth0 inet6 static" >> /etc/network/interfaces
 echo "        address ${base_net}2" >> /etc/network/interfaces
 echo "        netmask ${mask}" >> /etc/network/interfaces
 echo "        gateway ${base_net}1" >> /etc/network/interfaces
@@ -235,7 +235,7 @@ echo "ip -6 route add local ${base_net}/${mask} dev lo" >> /etc/rc.local
 if grep -q "address ${base_net}2" /etc/network/interfaces ;
 then echo "The network is already set up."
 else
-echo "iface $main_interface inet6 static" >> /etc/network/interfaces
+echo "iface eth0 inet6 static" >> /etc/network/interfaces
 echo "        address ${base_net}2" >> /etc/network/interfaces
 echo "        netmask ${mask}" >> /etc/network/interfaces
 echo "        gateway ${base_net}1" >> /etc/network/interfaces
@@ -250,7 +250,7 @@ echo "ip -6 route add local ${base_net}/${mask} dev lo" >> /etc/rc.local
 if grep -q "address ${base_net1}2" /etc/network/interfaces;
 then echo "The network is already set up."
 else
-echo "iface $main_interface inet6 static" >> /etc/network/interfaces
+echo "iface eth0 inet6 static" >> /etc/network/interfaces
 echo "        address ${base_net1}2" >> /etc/network/interfaces
 echo "        netmask 64" >> /etc/network/interfaces
 echo "        gateway ${base_net1}1" >> /etc/network/interfaces
@@ -265,7 +265,7 @@ echo "ip -6 route add local ${base_net}/${mask} dev lo" >> /etc/rc.local
 if grep -q "address ${base_net1}2" /etc/network/interfaces;
 then echo "The network is already set up."
 else
-echo "iface $main_interface inet6 static" >> /etc/network/interfaces
+echo "iface eth0 inet6 static" >> /etc/network/interfaces
 echo "        address ${base_net1}2" >> /etc/network/interfaces
 echo "        netmask 64" >> /etc/network/interfaces
 echo "        gateway ${base_net1}1" >> /etc/network/interfaces
@@ -310,10 +310,6 @@ maxconn 30000
 nserver 127.0.0.1
 nserver 8.8.8.8
 nserver 1.1.1.1
-nserver 2001:4860:4860::8888
-nserver 2001:4860:4860::8844
-nserver 2606:4700:4700::1111
-nserver 2606:4700:4700::1001
 nscache 65536
 nscache6 65536
 timeouts 1 5 30 60 180 1800 15 60
@@ -331,7 +327,7 @@ echo auth strong
 echo users $proxy_login:CL:$proxy_pass
 echo allow $proxy_login
 
-ip4_addr=\$(ip -4 addr sh dev $main_interface|grep inet |awk '{print \$2}')
+ip4_addr=\$(ip -4 addr sh dev eth0|grep inet |awk '{print \$2}')
 port=$proxy_port
 count=1
 for i in \$(cat /home/3proxy/ip.list); do
@@ -435,7 +431,7 @@ cat /dev/null > /etc/update-motd.d/99-3proxy
 cat > /etc/update-motd.d/99-3proxy << EOF
 #!/bin/bash
 echo -e '\033[30m#######################################################\033[0m
-\033[34m Best proxies servers on STORM \033[0m
+\033[34m Best virtual servers on vpsville.ru \033[0m
 
 \033[34mFirst block:\033[0m  \033[32m$ip4address:$proxy_port\033[0m
 
