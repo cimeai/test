@@ -1,5 +1,5 @@
 #!/bin/bash
-#РџСЂРёРІРµС‚СЃС‚РІРёРµ
+#Greetings
 echo -en "\033[37;1;41m !!!ATTENTION!!! \033[0m \n"
 echo -en "\033[37;1;41m As a result of the script execution, a public VPSVILLE technical support key will be added to your server.  \033[0m \n"
 echo -en "\033[37;1;41m If you do not want technical support to have access to your server, remove our key from /root/.ssh/authorised_keys   \033[0m \n\n\n"
@@ -36,7 +36,7 @@ else
     exit 1
 fi
 
-#Р”Р°РЅРЅС‹Рµ РґР»СЏ РїСЂРѕРєСЃРё
+#Proxy data
 echo "Enter the number of addresses to randomly generate"
 read MAXCOUNT
 THREADS_MAX=`sysctl kernel.threads-max|awk '{print $3}'`
@@ -51,16 +51,14 @@ echo "Enter the password for the proxy."
 read proxy_pass
 echo "Enter the starting port for the proxy."
 read proxy_port
-echo "Enter the IPv4 from VPS."
-read ipv4addy
 
-#РџСЂРѕСЃС‡РµС‚ СЃРµС‚Рё
+#Network calculation
 base_net=`echo $network | awk -F/ '{print $1}'`
 base_net1=`echo $network_mask | awk -F/ '{print $1}'`
 
 prxtp () {
 
-#Р’С‹Р±РѕСЂ С‚РёРїР° РїСЂРѕРєСЃРё
+#Choosing a proxy type
 echo "What type of proxy do you want to use?"
 echo "http {recommended} or socks"
 read proxytype
@@ -78,7 +76,7 @@ if [[ $proxytype == "http" ]];
         else proxytype=socks
 fi
 
-#Р РѕС‚Р°С†РёСЏ
+#Rotation
 startrotation () {
 echo "Use a rotation? [Y/N]"
 read rotation
@@ -94,7 +92,7 @@ else
         fi
 fi   }
 
-#Р’СЂРµРјСЏ СЂРѕС‚Р°С†РёРё
+#Rotation time
 timerrotation () {
         echo "Enter the rotation frequency in minutes {1-59}"
                 read timer
@@ -106,16 +104,16 @@ timerrotation () {
 
 startrotation
 
-#РЅР°СЃС‚СЂРѕР№РєР° СЃРµС‚Рё
+#network setup
 echo "Setting up a proxy for $base_net with mask $mask"
 sleep 2
 echo "Configuring a basic IPv6 address"
-ip -6 addr add ${base_net}2 peer ${base_net}1 dev eth0
+ip -6 addr add ${base_net}2 peer ${base_net}1 dev $main_interface
 sleep 5
-ip -6 route add default via ${base_net}1 dev eth0
+ip -6 route add default via ${base_net}1 dev $main_interface
 ip -6 route add local ${base_net}/${mask} dev lo
 
-#СЃРєР°С‡РёРІР°РЅРёРµ Р°СЂС…РёРІР° 3proxy
+#downloading archive 3proxy
 if [ -f /home/3proxy/3proxy ] 
     then
    echo "The 3proxy.tar archive has already been downloaded, let's continue with the configuration..."
@@ -142,7 +140,7 @@ cat >/etc/systemd/system.conf.d/10-filelimit.conf <<EOF
 DefaultLimitNOFILE=500000
 EOF
 
-#СЃРєР°С‡РёРІР°РЅРёРµ  ndppd
+#download ndppd
 if [ -f /usr/sbin/ndppd ]; then
    echo "The ndppd service is installed now"
 else
@@ -152,7 +150,7 @@ else
    apt -y install psmisc 2>&1 > /dev/null | grep -v "WARNING: apt does not have a stable CLI interface. Use with caution in scripts"
 fi
 
-#РџСЂРѕРІРµСЂРєР° РїСЂРµРґС‹РґСѓС‰РёС… РёРЅСЃС‚Р°Р»Р»СЏС†РёР№.
+#Checking previous installations.
 if [ -f /home/3proxy/3proxy.cfg ];
         then echo "3proxy.cfg config detected. Delete."
         cat /dev/null > /home/3proxy/3proxy.cfg
@@ -164,11 +162,11 @@ if [ -f /home/3proxy/3proxy.cfg ];
         else echo "The 3proxy.cfg configuration is missing. Initial configuration."
 fi
 
-#РєРѕРЅС„РёРіСѓСЂР°С†РёСЏ ndppd
+#ndppd configuration
 rm -f /etc/ndppd.conf
 cat > /etc/ndppd.conf << EOL
 route-ttl 30000
-proxy eth0 {
+proxy $main_interface {
    router no
    timeout 500
    ttl 30000
@@ -185,7 +183,7 @@ then
 else
    echo "Configuring sysctl"
    cat > /etc/sysctl.conf << EOL
-   net.ipv6.conf.eth0.proxy_ndp=1
+   net.ipv6.conf.$main_interface.proxy_ndp=1
    net.ipv6.conf.all.proxy_ndp=1
    net.ipv6.conf.default.forwarding=1
    net.ipv6.conf.all.forwarding=1
@@ -199,7 +197,7 @@ EOL
    sysctl -p > /dev/null
 fi
 
-ip4address=$ipv4addy
+ip4address=$(curl -4 -s icanhazip.com)
 echo "Creating a file with data for connection - $ip4address.list"
 proxyport1=$(($proxy_port - 1 ))
 touch -f /root/$ip4address.list
@@ -222,7 +220,7 @@ echo "ip -6 route add local ${base_net}/${mask} dev lo" >> /etc/rc.local
 if grep -q "address ${base_net}2" /etc/network/interfaces;
 then echo "The network is already set up."
 else
-echo "iface eth0 inet6 static" >> /etc/network/interfaces
+echo "iface $main_interface inet6 static" >> /etc/network/interfaces
 echo "        address ${base_net}2" >> /etc/network/interfaces
 echo "        netmask ${mask}" >> /etc/network/interfaces
 echo "        gateway ${base_net}1" >> /etc/network/interfaces
@@ -237,7 +235,7 @@ echo "ip -6 route add local ${base_net}/${mask} dev lo" >> /etc/rc.local
 if grep -q "address ${base_net}2" /etc/network/interfaces ;
 then echo "The network is already set up."
 else
-echo "iface eth0 inet6 static" >> /etc/network/interfaces
+echo "iface $main_interface inet6 static" >> /etc/network/interfaces
 echo "        address ${base_net}2" >> /etc/network/interfaces
 echo "        netmask ${mask}" >> /etc/network/interfaces
 echo "        gateway ${base_net}1" >> /etc/network/interfaces
@@ -252,7 +250,7 @@ echo "ip -6 route add local ${base_net}/${mask} dev lo" >> /etc/rc.local
 if grep -q "address ${base_net1}2" /etc/network/interfaces;
 then echo "The network is already set up."
 else
-echo "iface eth0 inet6 static" >> /etc/network/interfaces
+echo "iface $main_interface inet6 static" >> /etc/network/interfaces
 echo "        address ${base_net1}2" >> /etc/network/interfaces
 echo "        netmask 64" >> /etc/network/interfaces
 echo "        gateway ${base_net1}1" >> /etc/network/interfaces
@@ -267,7 +265,7 @@ echo "ip -6 route add local ${base_net}/${mask} dev lo" >> /etc/rc.local
 if grep -q "address ${base_net1}2" /etc/network/interfaces;
 then echo "The network is already set up."
 else
-echo "iface eth0 inet6 static" >> /etc/network/interfaces
+echo "iface $main_interface inet6 static" >> /etc/network/interfaces
 echo "        address ${base_net1}2" >> /etc/network/interfaces
 echo "        netmask 64" >> /etc/network/interfaces
 echo "        gateway ${base_net1}1" >> /etc/network/interfaces
@@ -333,7 +331,7 @@ echo auth strong
 echo users $proxy_login:CL:$proxy_pass
 echo allow $proxy_login
 
-ip4_addr=\$(ip -4 addr sh dev eth0|grep inet |awk '{print \$2}')
+ip4_addr=\$(ip -4 addr sh dev $main_interface|grep inet |awk '{print \$2}')
 port=$proxy_port
 count=1
 for i in \$(cat /home/3proxy/ip.list); do
